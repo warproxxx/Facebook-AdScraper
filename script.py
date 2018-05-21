@@ -241,8 +241,11 @@ def scrape_likes(user,driver):
 def perform_scraping(df):
     df['ProfileID'] = ""
     df['PagesLiked'] = ""
+	
+	count = 0
 
     for idx, row in df.iterrows():
+		print("{} of {}".format(count, df.shape[0]))
         print("Getting UserID for {}".format(row['Profile URL']))
         profileId = get_userid(row['Profile URL'], driver)
         df.at[idx, 'ProfileID'] = profileId
@@ -264,6 +267,7 @@ def perform_scraping(df):
         print('\n')
 
         df.to_csv('currentlogs.csv', index=False)
+		count += 1
 
 
 # In[8]:
