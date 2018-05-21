@@ -39,8 +39,8 @@ def load_facebook():
     username = input("Enter Facebook Username:")
     pswd = getpass.getpass('Enter Facebook Password:')
     
-    driver.find_element_by_id('email').send_keys('n00bdan13@gmail.com')
-    driver.find_element_by_id('pass').send_keys('daniel124')
+    driver.find_element_by_id('email').send_keys(username)
+    driver.find_element_by_id('pass').send_keys(pswd)
     driver.find_element_by_id('pass').send_keys(Keys.ENTER)
     
     try:
