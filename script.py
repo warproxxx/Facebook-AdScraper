@@ -103,6 +103,7 @@ def get_comments(url, driver):
         
         try:
             driver.find_elements_by_xpath("(//a[contains(text(),'View more comments')])")[3].click()
+			print("Viewing more comments")
         except:
             break
             
@@ -324,7 +325,9 @@ def get_pagesusers(df, colname):
 
 driver = load_facebook()
 
-url = input("Enter the URL you want to scrape from")
+url = input("Enter the URL you want to scrape from: ")
+
+print("About to extract comments")
 
 commentsDf = get_positive(url, driver)
 
