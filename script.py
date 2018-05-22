@@ -330,7 +330,8 @@ username = input("Enter Facebook Username:")
 pswd = getpass.getpass('Enter Facebook Password:')
 
 for process in psutil.process_iter():
-    if 'firefox' in process.name:
+    if 'firefox' in process.name():
+        print("Killed a firefox instance")
         process.kill()
 
 def get_combined_df(df, pages, ids, filename, colname='PagesLiked'):
@@ -374,13 +375,16 @@ driver = load_facebook(username, pswd)
 urls = []
 uniquenames = []
 
+results = int(input("Enter the number of results you want to save: (50 recommended at least): "))
+print("\n")
+
 url = input("Enter the URL you want to scrape from (Type E after completion): ")
 name = input("Enter a unique name to represent this while saving the file (Type E after completion): ")
 
 urls.append(url)
 uniquenames.append(name)
 
-results = int(input("Enter the number of results you want to save: (50 recommended at least)"))
+
 
 while url != "E":
     url = input("Enter the URL you want to scrape from (Type E after completion): ")
