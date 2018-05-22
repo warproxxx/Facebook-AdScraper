@@ -31,13 +31,12 @@ from nltk.tokenize import treebank
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def load_facebook():
+import psutil
+
+def load_facebook(username, pswd):
     url = "https://facebook.com"
     driver = webdriver.Firefox()
     driver.get(url)
-    
-    username = input("Enter Facebook Username:")
-    pswd = getpass.getpass('Enter Facebook Password:')
     
     driver.find_element_by_id('email').send_keys(username)
     driver.find_element_by_id('pass').send_keys(pswd)
@@ -326,67 +325,94 @@ def get_pagesusers(df, colname):
         userIds.append(row['ProfileID'])
     
     return uniquePages, userIds
+    
+username = input("Enter Facebook Username:")
+pswd = getpass.getpass('Enter Facebook Password:')
 
-driver = load_facebook()
+for process in psutil.process_iter():
+    if 'firefox' in process.name:
+        process.kill()
 
-url = input("Enter the URL you want to scrape from: ")
-
-print("About to extract comments")
-
-commentsDf = get_positive(url, driver)
-
-perform_scraping(commentsDf)
-
-userDf = pd.read_csv('currentlogs.csv')
-
-if ('Unnamed: 0' in userDf):
-    userDf = userDf.drop('Unnamed: 0', axis=1)
-
-userDf['PagesLiked'] =  userDf['PagesLiked'].astype(str)
-userDf['PagesLiked'] =  userDf['PagesLiked'].apply(to_list)
-userDf['PagesLiked'] = userDf['PagesLiked'].apply(to_pagename)
-
-pages, ids = get_pagesusers(userDf, colname='PagesLiked')
-
-def get_combined_df(df, pages, ids, colname='PagesLiked'):
+def get_combined_df(df, pages, ids, filename, colname='PagesLiked'):
     finalDf = pd.DataFrame()
-    
+
     df = df.set_index('ProfileID')
-    
+
     multiDf = df[colname].apply(pd.Series).stack()
-    
+
     finalDf['ProfileID'] = multiDf.reset_index()['ProfileID']
     finalDf['Page'] = multiDf.reset_index()[0]
-    
-    
-    
+
+
+
     newDf = pd.DataFrame(columns=pages)
-    
+
     newDf['ProfileID'] = list(set(finalDf['ProfileID']))
     newDf = newDf.set_index('ProfileID')
-    
+
     for idx, row in newDf.iterrows():
         newDf.loc[idx] = 0
         likedPages = finalDf[finalDf['ProfileID'] == idx]['Page']
         newDf.loc[idx][likedPages] = 1
-    
+
     print("Generating Heatmap")
-    
-    doc=pd.ExcelWriter('tests.xlsx',engine='xlsxwriter')
+    doc=pd.ExcelWriter('heatmap-{}.xlsx'.format(filename) ,engine='xlsxwriter')
     newDf.to_excel(doc,sheet_name='Sheet1')
-    
+    print("Heatmap saved to heatmap-{}.xlsx".format(filename))
+
     return newDf
 
-combinedDf = get_combined_df(userDf, pages, ids)
-
-def get_top_pages(df):
-    topN = int(input("How many pages you want to see? "))
-    
-    print("\n")
-    saveDf = df.sum(axis=0).sort_values(ascending=False).head(topN)
+def get_top_pages(df, results, filename):
+    saveDf = df.sum(axis=0).sort_values(ascending=False).head(results)
     print(saveDf)
     
-    saveDf.to_csv('toppages.csv')
-    print("\nSaved to toppages.csv")
+    saveDf.to_csv('toppages-{}.csv'.format(filename))
+    print("\nSaved to toppages-{}.csv".format(filename))
+    
+driver = load_facebook(username, pswd)
 
-get_top_pages(combinedDf)
+urls = []
+uniquenames = []
+
+url = input("Enter the URL you want to scrape from (Type E after completion): ")
+name = input("Enter a unique name to represent this while saving the file (Type E after completion): ")
+
+urls.append(url)
+uniquenames.append(name)
+
+results = int(input("Enter the number of results you want to save: (50 recommended at least)"))
+
+while url != "E":
+    url = input("Enter the URL you want to scrape from (Type E after completion): ")
+    name = input("Enter a unique name to represent this while saving the file (Type E after completion): ")
+
+    urls.append(url)
+    uniquenames.append(name)
+    
+    
+count = 0
+
+for url in urls:
+
+    print("About to extract comments from {}".format(url))
+
+    commentsDf = get_positive(url, driver)
+
+    perform_scraping(commentsDf)
+
+    userDf = pd.read_csv('currentlogs.csv')
+
+    if ('Unnamed: 0' in userDf):
+        userDf = userDf.drop('Unnamed: 0', axis=1)
+
+    userDf['PagesLiked'] =  userDf['PagesLiked'].astype(str)
+    userDf['PagesLiked'] =  userDf['PagesLiked'].apply(to_list)
+    userDf['PagesLiked'] = userDf['PagesLiked'].apply(to_pagename)
+
+    pages, ids = get_pagesusers(userDf, colname='PagesLiked')
+
+    combinedDf = get_combined_df(userDf, pages, ids, uniquenames[count])
+
+    get_top_pages(combinedDf, results, uniquenames[count])
+    
+    count += 1
