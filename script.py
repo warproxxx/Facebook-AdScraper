@@ -239,16 +239,19 @@ def scrape_likes(user,driver):
     if "We couldn\'t find anything for" in str(soup):
         print("No likes found for {}".format(user))
     else:
-        res = soup.find("div", {"id": "browse_result_area"})
+        try:
+            res = soup.find("div", {"id": "browse_result_area"})
 
-        links = res.find_all('a')
-        
-        scroll_till_bottom(driver)
-        
-        for link in links:
-            if ('facebook.com' in link['href']):
-                if (link['href'] not in linkList):
-                    linkList.append(link['href'])
+            links = res.find_all('a')
+            
+            scroll_till_bottom(driver)
+            
+            for link in links:
+                if ('facebook.com' in link['href']):
+                    if (link['href'] not in linkList):
+                        linkList.append(link['href'])
+        except:
+            pass
                 
     return linkList
 
@@ -265,7 +268,7 @@ def perform_scraping(df):
     count = 0
 
     for idx, row in df.iterrows():
-        print("{} of {}".format(count, df.shape[0]))
+        print("{} of {}".format(count+1, df.shape[0]))
         print("Getting UserID for {}".format(row['Profile URL']))
         profileId, profileName, profileCity = get_userid(row['Profile URL'], driver)
         
