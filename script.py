@@ -423,9 +423,10 @@ uniquenames.append(name)
 while url != "E":
     url = input("Enter the URL you want to scrape from (Type E after completion): ")
     name = input("Enter a unique name to represent this while saving the file (Type E after completion): ")
-
-    urls.append(url)
-    uniquenames.append(name)
+    
+    if url != "E":
+        urls.append(url)
+        uniquenames.append(name)
     
     
 count = 0
