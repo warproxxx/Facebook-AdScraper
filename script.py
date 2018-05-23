@@ -141,21 +141,24 @@ def get_id(text):
 
 def get_userid(url, driver):
     ret_id = ''
+    ret_name = ''
+    ret_city = ''
+    
+    driver.get(url)
+    time.sleep(4)
+
+    try:
+        elem = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'hidden_elem')))
+    except TimeoutException:
+        print("Too much time")
+        
+        
+    html = driver.page_source
+    soup = BeautifulSoup(html, "lxml")
     
     if ("profile.php?id=" in url):
         ret_id = get_id(url)
     else:
-        driver.get(url)
-        time.sleep(4)
-
-        try:
-            elem = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'hidden_elem')))
-        except TimeoutException:
-            print("Too much time")
-
-        html = driver.page_source
-        soup = BeautifulSoup(html, "lxml")
-
         userId = ''
 
         for aVals in soup.find_all('a'):
@@ -168,7 +171,23 @@ def get_userid(url, driver):
             except:
                 pass
             
-    return ret_id
+    spans = soup.find_all('span')
+
+    for span in spans:
+        if (span.has_attr('data-testid')):
+            ret_name = span.get_text()
+
+    divs = soup.find_all('div', {'id': 'intro_container_id'})
+
+    for div in divs:
+        if('Lives in' in div.get_text()):
+            aCollection = div.find_all('a', {"class": "profileLink"})
+
+            for a in aCollection:
+                if('hometown' in a['href']):
+                    ret_city = a.get_text()
+            
+    return ret_id, ret_name, ret_city
 
 
 # In[6]:
@@ -239,6 +258,8 @@ def scrape_likes(user,driver):
 
 def perform_scraping(df):
     df['ProfileID'] = ""
+    df['ProfileName'] = ""
+    df['ProfileCity'] = ""
     df['PagesLiked'] = ""
     
     count = 0
@@ -246,9 +267,15 @@ def perform_scraping(df):
     for idx, row in df.iterrows():
         print("{} of {}".format(count, df.shape[0]))
         print("Getting UserID for {}".format(row['Profile URL']))
-        profileId = get_userid(row['Profile URL'], driver)
+        profileId, profileName, profileCity = get_userid(row['Profile URL'], driver)
+        
         df.at[idx, 'ProfileID'] = profileId
+        df.at[idx, 'ProfileName'] = profileName
+        df.at[idx, 'ProfileCity'] = profileCity
+        
         print("The profile id is: {}".format(profileId))
+        print("The profile name is: {}".format(profileName))
+        print("The current city is: {}\n".format(profileCity))
 
         sleepsecs = random.randint(2,6)
         print("Sleeping for {} seconds".format(sleepsecs))
@@ -336,6 +363,8 @@ for process in psutil.process_iter():
 
 def get_combined_df(df, pages, ids, filename, colname='PagesLiked'):
     finalDf = pd.DataFrame()
+    
+    sheet2Df = df[['ProfileID', 'ProfileName', 'ProfileCity']]
 
     df = df.set_index('ProfileID')
 
@@ -359,6 +388,8 @@ def get_combined_df(df, pages, ids, filename, colname='PagesLiked'):
     print("Generating Heatmap")
     doc=pd.ExcelWriter('heatmap-{}.xlsx'.format(filename) ,engine='xlsxwriter')
     newDf.to_excel(doc,sheet_name='Sheet1')
+    sheet2Df.to_excel(doc, sheet_name='Sheet2')
+    
     print("Heatmap saved to heatmap-{}.xlsx".format(filename))
 
     return newDf
