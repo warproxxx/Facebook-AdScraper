@@ -1,2 +1,2 @@
-# Facebook-Scraper
-Uses google to find hot posts. Then uses facebook intersection data to find common interests
+# AdScraper
+Finds out the interest group to which facebook ads have been targeted. For a given facebook post URL, finds out pages liked by a user (if they are public). When all pages are scraped, finds intersection to find the common interest group targeted by the advertisers and saves in Heatmap and csv.
